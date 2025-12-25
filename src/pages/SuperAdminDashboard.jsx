@@ -43,20 +43,33 @@ export default function SuperAdminDashboard() {
         try {
             setProcessing(request.id);
 
-            // Create Firebase Auth user
-            const tempPassword = generateRandomPassword();
-            const userCredential = await createUserWithEmailAndPassword(
-                auth,
-                request.email,
-                tempPassword
-            );
+            // We expect request.uid to exist because users now sign up first
+            let userId = request.uid;
 
-            const user = userCredential.user;
+            // FALLBACK for legacy requests without UID (won't happen for new flow)
+            // If we don't have a UID, we can't create the profile easily because we can't look up by email client-side.
+            if (!userId) {
+                // Try to see if we can create the user (if they truly didn't exist)
+                try {
+                    const tempPassword = generateRandomPassword();
+                    const userCredential = await createUserWithEmailAndPassword(auth, request.email, tempPassword);
+                    userId = userCredential.user.uid;
+                    await sendPasswordResetEmail(auth, request.email);
+                    alert(`Legacy request approved! Password reset sent to ${request.email}`);
+                } catch (err) {
+                    if (err.code === 'auth/email-already-in-use') {
+                        throw new Error("This user already exists in Auth but the request has no UID attached. Please UNLOCK/REJECT this request and ask the user to sign up again.");
+                    }
+                    throw err;
+                }
+            }
 
-            // Create Firestore user document
-            const userRef = doc(db, 'companies', 'primecommerce', 'users', user.uid);
+            // Create Firestore user document (Profile)
+            // Note: If the user already logged in once, this might overwrite? 
+            // setDoc with { merge: true } is safer but for initial setup standard setDoc is okay.
+            const userRef = doc(db, 'companies', 'primecommerce', 'users', userId);
             const userData = {
-                uid: user.uid,
+                uid: userId, // Ensure UID matches Auth UID
                 name: request.name,
                 email: request.email,
                 role: 'admin',
@@ -72,10 +85,12 @@ export default function SuperAdminDashboard() {
             // Update join request status
             await JoinRequestService.updateRequestStatus(request.id, 'APPROVED');
 
-            // Send password reset email so user can set their password
-            await sendPasswordResetEmail(auth, request.email);
+            // If we had a UID, we assume they know their password (set during signup)
+            // So we don't send a password reset unless we created a temp one above.
+            if (request.uid) {
+                alert('Admin approved successfully! They can now log in with their chosen password.');
+            }
 
-            alert(`Admin approved! Password reset email sent to ${request.email}`);
             loadRequests();
         } catch (error) {
             console.error('Error approving request:', error);

@@ -23,7 +23,8 @@ class JoinRequestService {
      */
     async createJoinRequest(requestData) {
         console.log('Starting createJoinRequest with data:', requestData);
-        const { name, email, roleRequested, companySlug, managerEmail, adminEmail, superAdminEmail } = requestData;
+        // Add uid to destructuring
+        const { uid, name, email, roleRequested, companySlug, managerEmail, adminEmail, superAdminEmail } = requestData;
 
         // Validate required fields
         if (!name || !email || !roleRequested || !companySlug) {
@@ -53,6 +54,7 @@ class JoinRequestService {
         */
 
         const joinRequest = {
+            ...(uid && { uid }), // Conditionally add UID if present
             name,
             email: email.toLowerCase(),
             roleRequested,
