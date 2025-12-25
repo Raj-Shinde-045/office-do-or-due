@@ -12,6 +12,7 @@ import EmployeeDashboard from './pages/EmployeeDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import SetupPage from './pages/SetupPage';
+import TestConnection from './pages/TestConnection';
 
 // Wrapper to handle redirection based on role
 function RootRedirect() {
@@ -60,6 +61,9 @@ function App() {
             {/* Prime Commerce - Manager Routes */}
             <Route path="/primecommerce/manager/login" element={<CompanyLogin role="manager" />} />
             <Route path="/primecommerce/manager/signup" element={<CompanySignup role="manager" />} />
+
+            {/* Test Route */}
+            <Route path="/test-connection" element={<TestConnection />} />
 
             {/* Prime Commerce - Admin Routes */}
             <Route path="/primecommerce/admin/login" element={<CompanyLogin role="admin" />} />

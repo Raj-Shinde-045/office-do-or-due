@@ -22,10 +22,12 @@ class JoinRequestService {
      * @returns {Promise<string>} - The ID of the created request
      */
     async createJoinRequest(requestData) {
+        console.log('Starting createJoinRequest with data:', requestData);
         const { name, email, roleRequested, companySlug, managerEmail, adminEmail, superAdminEmail } = requestData;
 
         // Validate required fields
         if (!name || !email || !roleRequested || !companySlug) {
+            console.error('Missing required fields');
             throw new Error('Missing required fields: name, email, roleRequested, companySlug');
         }
 
@@ -41,10 +43,14 @@ class JoinRequestService {
         }
 
         // Check if a pending request already exists for this email
+        // SKIPPED: This requires read permissions which unauthenticated users don't have.
+        // Duplicates will be handled by Admins during approval.
+        /*
         const existingRequest = await this.getPendingRequestByEmail(email, companySlug);
         if (existingRequest) {
             throw new Error('A pending join request already exists for this email');
         }
+        */
 
         const joinRequest = {
             name,
@@ -58,8 +64,15 @@ class JoinRequestService {
             ...(superAdminEmail && { approverEmail: superAdminEmail.toLowerCase() })
         };
 
-        const docRef = await addDoc(collection(db, this.collectionName), joinRequest);
-        return docRef.id;
+        try {
+            console.log('Attempting to add document to collection:', this.collectionName);
+            const docRef = await addDoc(collection(db, this.collectionName), joinRequest);
+            console.log('Document written with ID: ', docRef.id);
+            return docRef.id;
+        } catch (e) {
+            console.error('Error adding document: ', e);
+            throw e;
+        }
     }
 
     /**
