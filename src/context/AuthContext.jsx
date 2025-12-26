@@ -4,9 +4,7 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
-    onAuthStateChanged,
-    GoogleAuthProvider,
-    signInWithPopup
+    onAuthStateChanged
 } from "firebase/auth";
 import {
     doc,
@@ -15,6 +13,7 @@ import {
     query,
     where,
     getDocs,
+    collection,
     collectionGroup
 } from "firebase/firestore";
 
@@ -29,35 +28,41 @@ export function AuthProvider({ children }) {
     const [userProfile, setUserProfile] = useState(null); // Stores role, company, etc.
     const [loading, setLoading] = useState(true);
 
-    // Helper: Verify Access Code
-    async function verifyAccessCode(companyName, accessCode) {
-        if (!companyName || !accessCode) throw new Error("Company Name and Access Code are required");
+    // Helper: Verify Access Code (Global Search)
+    async function verifyAccessCode(accessCode) {
+        if (!accessCode) throw new Error("Access Code is required");
 
-        const cleanCode = accessCode.trim();
-        const companyId = companyName.trim().toLowerCase().replace(/\s+/g, '-');
+        // Sanitize: remove spaces and force uppercase (since all our generated keys are UPPERCASE)
+        const cleanCode = accessCode.trim().toUpperCase();
+        console.log(`Verifying Access Code: '${cleanCode}'`);
 
-        const companyRef = doc(db, "companies", companyId);
-        const companySnap = await getDoc(companyRef);
+        // 1. Check if it's a Manager Code
+        try {
+            const qManager = query(collection(db, "companies"), where("managerCode", "==", cleanCode));
+            const snapManager = await getDocs(qManager);
 
-        if (!companySnap.exists()) {
-            throw new Error(`Company "${companyName}" not found. Please register the company first.`);
+            if (!snapManager.empty) {
+                const doc = snapManager.docs[0];
+                console.log("Found Manager Code for:", doc.id);
+                return { role: 'manager', companyId: doc.id, companyName: doc.data().name };
+            }
+
+            // 2. Check if it's an Employee Code
+            const qEmployee = query(collection(db, "companies"), where("employeeCode", "==", cleanCode));
+            const snapEmployee = await getDocs(qEmployee);
+
+            if (!snapEmployee.empty) {
+                const doc = snapEmployee.docs[0];
+                console.log("Found Employee Code for:", doc.id);
+                return { role: 'employee', companyId: doc.id, companyName: doc.data().name };
+            }
+        } catch (error) {
+            console.error("Firestore Query Error:", error);
+            throw new Error("Database connection failed during verification.");
         }
 
-        const data = companySnap.data();
-        let role = '';
-
-        console.log(`Verifying Code: Input="${cleanCode}", Manager="${data.managerCode}", Employee="${data.employeeCode}"`);
-
-        // Check codes (case-sensitive)
-        if (cleanCode === data.managerCode) {
-            role = 'manager';
-        } else if (cleanCode === data.employeeCode) {
-            role = 'employee';
-        } else {
-            throw new Error("Invalid Access Code");
-        }
-
-        return { role, companyId };
+        console.warn("No company matches this code.");
+        throw new Error("Invalid Access Code. Please check with your administrator.");
     }
 
     // Helper to create profile in Firestore
@@ -79,9 +84,14 @@ export function AuthProvider({ children }) {
     }
 
     // Signup function
-    async function signup(email, password, name, companyName, accessCode) {
-        // Verify code BEFORE creating auth user to prevent ghost accounts
-        const { role, companyId } = await verifyAccessCode(companyName, accessCode);
+    async function signup(email, password, name, accessCode, expectedCompanyId = null) {
+        // Verify code
+        const { role, companyId, companyName } = await verifyAccessCode(accessCode);
+
+        // Security Check: Ensure key matches the company URL
+        if (expectedCompanyId && companyId !== expectedCompanyId) {
+            throw new Error(`This License Key belongs to '${companyName}', but you are trying to register for '${expectedCompanyId}'. Please check your URL or Key.`);
+        }
 
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
@@ -90,25 +100,34 @@ export function AuthProvider({ children }) {
         return userCredential;
     }
 
+    // NEW: Link Existing User to Company
+    async function joinCompany(email, password, accessCode, expectedCompanyId = null) {
+        // 1. Verify credentials by signing in
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // 2. Verify Code
+        const { role, companyId, companyName } = await verifyAccessCode(accessCode);
+
+        if (expectedCompanyId && companyId !== expectedCompanyId) {
+            throw new Error(`Key mismatch: expected ${expectedCompanyId} but key is for ${companyName}`);
+        }
+
+        // 3. Create Profile for this company
+        // Note: We use existing user's display name if available, or just email
+        await createUserProfile(user.uid, user.displayName || email.split('@')[0], email, companyId, companyName, role);
+
+        return userCredential;
+    }
+
     // Login function
     function login(email, password) {
         return signInWithEmailAndPassword(auth, email, password);
     }
 
-    // Google Sign In
-    function signInWithGoogle() {
-        const provider = new GoogleAuthProvider();
-        return signInWithPopup(auth, provider);
-    }
 
-    // Complete Profile (for Google Users)
-    async function completeProfile(companyName, accessCode) {
-        if (!currentUser) throw new Error("No user logged in");
 
-        const { role, companyId } = await verifyAccessCode(companyName, accessCode);
 
-        await createUserProfile(currentUser.uid, currentUser.displayName, currentUser.email, companyId, companyName, role);
-    }
 
     // Logout function
     function logout() {
@@ -167,8 +186,7 @@ export function AuthProvider({ children }) {
         userProfile,
         signup,
         login,
-        signInWithGoogle,
-        completeProfile,
+
         logout,
         loading
     };

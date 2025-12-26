@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function Signup() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [companyName, setCompanyName] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+
     const [accessCode, setAccessCode] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { signup, signInWithGoogle } = useAuth();
+    // Check for company context
+    const { companyId } = useParams(); // Optional: if accessed via /:companyId/signup
+
+    const { signup, joinCompany } = useAuth();
     const navigate = useNavigate();
 
     async function handleSubmit(e) {
@@ -24,10 +29,34 @@ export default function Signup() {
         try {
             setError('');
             setLoading(true);
-            await signup(email, password, name, companyName, accessCode);
+
+            // Try standard signup
+            await signup(email, password, name, accessCode, companyId);
+
             navigate('/');
         } catch (err) {
             console.error(err);
+
+            // Handle "Email Already In Use" - Meaning user wants to join another company
+            if (err.code === 'auth/email-already-in-use') {
+                try {
+                    console.log("Email exists. Attempting to link to new company...");
+                    await joinCompany(email, password, accessCode, companyId);
+                    // Success!
+                    navigate('/');
+                    return; // Exit
+                } catch (joinErr) {
+                    console.error("Join failed:", joinErr);
+                    // If wrong password or other error, show that
+                    if (joinErr.code === 'auth/wrong-password') {
+                        setError('Account with this email exists, but you entered the wrong password. Please try again.');
+                        setLoading(false);
+                        return;
+                    }
+                    // Fallback to original error if this fails
+                }
+            }
+
             setError('Failed to create account: ' + err.message);
         }
         setLoading(false);
@@ -53,28 +82,16 @@ export default function Signup() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700">Company Name</label>
+                        <label className="block text-sm font-medium text-slate-700">Access Code (License Key)</label>
                         <input
                             type="text"
                             required
-                            placeholder="e.g. Acme Corp"
-                            className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            value={companyName}
-                            onChange={(e) => setCompanyName(e.target.value)}
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700">Access Code</label>
-                        <input
-                            type="text"
-                            required
-                            className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-mono"
                             value={accessCode}
                             onChange={(e) => setAccessCode(e.target.value)}
-                            placeholder="Enter Company Code (e.g. ABC or 123)"
+                            placeholder="e.g. BMW-MGR-X92"
                         />
-                        <p className="text-xs text-slate-500 mt-1">Ask manager for code: 'ABC' (Manager) or '123' (Employee)</p>
+                        <p className="text-xs text-slate-500 mt-1">Enter the License Key provided by your administrator.</p>
                     </div>
 
                     <div>
@@ -90,13 +107,22 @@ export default function Signup() {
 
                     <div>
                         <label className="block text-sm font-medium text-slate-700">Password</label>
-                        <input
-                            type="password"
-                            required
-                            className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                required
+                                className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
                     </div>
 
                     <button
@@ -106,36 +132,13 @@ export default function Signup() {
                     >
                         {loading ? 'Creating Account...' : 'Sign Up'}
                     </button>
-                    <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-slate-300"></div>
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                            <span className="px-2 bg-white text-slate-500">Or continue with</span>
-                        </div>
-                    </div>
 
-                    <button
-                        type="button"
-                        onClick={async () => {
-                            try {
-                                await signInWithGoogle();
-                                navigate('/');
-                            } catch (error) {
-                                setError("Google Sign In Failed: " + error.message);
-                            }
-                        }}
-                        className="w-full flex justify-center py-2 px-4 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                        <img className="h-5 w-5 mr-2" src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google logo" />
-                        Sign up with Google
-                    </button>
                 </form>
 
                 <div className="mt-6 text-center text-sm">
                     <p className="text-slate-600">
                         Already have an account?{' '}
-                        <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                        <Link to={companyId ? `/${companyId}/login` : "/login"} className="font-medium text-blue-600 hover:text-blue-500">
                             Log in
                         </Link>
                     </p>
