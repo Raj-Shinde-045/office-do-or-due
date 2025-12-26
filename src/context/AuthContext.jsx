@@ -100,6 +100,7 @@ export function AuthProvider({ children }) {
         return userCredential;
     }
 
+<<<<<<< HEAD
     // NEW: Link Existing User to Company
     async function joinCompany(email, password, accessCode, expectedCompanyId = null) {
         // 1. Verify credentials by signing in
@@ -128,6 +129,50 @@ export function AuthProvider({ children }) {
 
 
 
+=======
+    // Login function with company and role validation
+    async function login(email, password, companySlug, expectedRole = null) {
+        // First authenticate with Firebase
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Fetch user profile to validate company and role
+        const usersQuery = query(
+            collectionGroup(db, "users"),
+            where("uid", "==", user.uid)
+        );
+
+        const querySnapshot = await getDocs(usersQuery);
+
+        if (querySnapshot.empty) {
+            // User doesn't have a profile - they weren't approved yet
+            await signOut(auth);
+            throw new Error("No account found. Please wait for your join request to be approved.");
+        }
+
+        const userData = querySnapshot.docs[0].data();
+
+        // Validate company
+        if (userData.companyId !== companySlug) {
+            await signOut(auth);
+            throw new Error("Invalid company credentials");
+        }
+
+        // Check if user is active
+        if (userData.status !== 'active' && userData.status !== 'admin') {
+            await signOut(auth);
+            throw new Error("Your account is not active. Please contact your administrator.");
+        }
+
+        // If expectedRole is provided, validate it matches
+        if (expectedRole && userData.role !== expectedRole) {
+            // Don't sign out - just let the redirect handle it
+            console.log(`User role (${userData.role}) doesn't match expected (${expectedRole}), will redirect`);
+        }
+
+        return userCredential;
+    }
+>>>>>>> 0416bddd4c1124f7733b794279b8b41e74f5ad53
 
     // Logout function
     function logout() {
@@ -184,9 +229,11 @@ export function AuthProvider({ children }) {
     const value = {
         currentUser,
         userProfile,
-        signup,
         login,
+<<<<<<< HEAD
 
+=======
+>>>>>>> 0416bddd4c1124f7733b794279b8b41e74f5ad53
         logout,
         loading
     };

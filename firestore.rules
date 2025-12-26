@@ -50,5 +50,19 @@ service cloud.firestore {
       // Allow writing only if it's their own doc (e.g. lastLoginAt)
       allow write: if isAuthenticated() && userId == request.auth.uid;
     }
+
+    // Join Requests Collection
+    match /joinRequests/{requestId} {
+      // Anyone can create a join request (unauthenticated signup)
+      allow create: if true;
+      
+      // Authenticated users can read requests
+      allow read: if isAuthenticated();
+      
+      // Only specific approvers can update the status
+      // Managers/Admins can update join requests where they are the approver
+      allow update: if isAuthenticated() && 
+        (request.auth.token.email == resource.data.approverEmail);
+    }
   }
 }
