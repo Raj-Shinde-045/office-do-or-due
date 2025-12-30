@@ -223,14 +223,21 @@ export function useVerifyTask(userProfile) {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ employeeId, taskId, status, points }) => {
+        mutationFn: async ({ employeeId, taskId, status, points, rejectionMessage }) => {
             const taskRef = doc(db, "companies", userProfile.companyId, "users", employeeId, "activities", taskId);
 
-            await updateDoc(taskRef, {
+            const updateData = {
                 status: status,
                 verifiedAt: new Date().toISOString(),
                 verifiedBy: userProfile.uid
-            });
+            };
+
+            // Add rejection message if rejecting
+            if (status === 'rejected' && rejectionMessage) {
+                updateData.rejectionMessage = rejectionMessage;
+            }
+
+            await updateDoc(taskRef, updateData);
 
             const userRef = doc(db, "companies", userProfile.companyId, "users", employeeId);
 

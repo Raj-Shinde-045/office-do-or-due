@@ -210,6 +210,20 @@ export default function EmployeeDashboard() {
                                                 </span>
                                             )}
                                         </div>
+
+                                        {/* Rejection Message */}
+                                        {task.status === 'rejected' && task.rejectionMessage && (
+                                            <div className="mt-3 bg-red-50 border-l-4 border-red-500 p-3 rounded">
+                                                <div className="flex items-start gap-2">
+                                                    <AlertCircle size={16} className="text-red-600 mt-0.5 shrink-0" />
+                                                    <div>
+                                                        <p className="text-xs font-bold text-red-800 mb-1">Rejection Reason:</p>
+                                                        <p className="text-xs text-red-700">{task.rejectionMessage}</p>
+                                                        <p className="text-[10px] text-red-600 mt-2 italic">Please fix the issue and resubmit before the deadline.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex items-center gap-2">

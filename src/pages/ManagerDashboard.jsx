@@ -36,9 +36,37 @@ export default function ManagerDashboard() {
     const [attachmentFile, setAttachmentFile] = useState(null);
     const [attachmentLink, setAttachmentLink] = useState('');
 
-    const verifyTask = (taskId, status, points) => {
+    // Rejection Modal State
+    const [showRejectionModal, setShowRejectionModal] = useState(false);
+    const [rejectionTaskId, setRejectionTaskId] = useState(null);
+    const [rejectionMessage, setRejectionMessage] = useState('');
+    const [rejectionPoints, setRejectionPoints] = useState(0);
+
+    const verifyTask = (taskId, status, points, rejectionMsg = '') => {
         if (!selectedEmployee) return;
-        verifyTaskMutation({ employeeId: selectedEmployee.uid, taskId, status, points });
+        verifyTaskMutation({
+            employeeId: selectedEmployee.uid,
+            taskId,
+            status,
+            points,
+            rejectionMessage: rejectionMsg
+        });
+    };
+
+    const handleRejectClick = (taskId, points) => {
+        setRejectionTaskId(taskId);
+        setRejectionPoints(points);
+        setRejectionMessage('');
+        setShowRejectionModal(true);
+    };
+
+    const handleConfirmRejection = () => {
+        if (rejectionTaskId) {
+            verifyTask(rejectionTaskId, 'rejected', rejectionPoints, rejectionMessage);
+            setShowRejectionModal(false);
+            setRejectionTaskId(null);
+            setRejectionMessage('');
+        }
     };
 
     const handleAssignTask = async (e) => {
@@ -193,7 +221,10 @@ export default function ManagerDashboard() {
                     ) : (
                         <ul className="space-y-1 px-2">
                             {filteredEmployees.map(emp => {
-                                const hasPending = emp.pendingTaskCount > 0;
+                                // Calculate actual pending count from tasks
+                                const empTasks = emp.uid === selectedEmployee?.uid ? employeeTasks : [];
+                                const actualPendingCount = empTasks.filter(t => t.status === 'verification_pending').length;
+                                const hasPending = actualPendingCount > 0;
                                 const isRequesting = emp.status === 'requesting_task';
                                 const isSelected = selectedEmployee?.uid === emp.uid;
 
@@ -230,10 +261,10 @@ export default function ManagerDashboard() {
                                                 </div>
                                             </div>
 
-                                            {/* Activity Indicator (Right Side) */}
-                                            {hasPending && (
+                                            {/* Activity Indicator (Right Side) - Only show if > 0 */}
+                                            {hasPending && actualPendingCount > 0 && (
                                                 <div className="bg-red-500 h-5 min-w-[20px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm">
-                                                    {emp.pendingTaskCount}
+                                                    {actualPendingCount}
                                                 </div>
                                             )}
                                         </button>
@@ -361,7 +392,7 @@ export default function ManagerDashboard() {
                                                                         <span className="hidden md:inline">Approve</span>
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => verifyTask(task.id, 'rejected', task.points || 0)}
+                                                                        onClick={() => handleRejectClick(task.id, task.points || 0)}
                                                                         className="px-3 py-1.5 bg-red-white border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold rounded shadow-sm transition active:scale-95"
                                                                     >
                                                                         <span className="md:hidden">✗</span>
@@ -480,8 +511,8 @@ export default function ManagerDashboard() {
                                                         type="button"
                                                         onClick={() => setAttachmentType('file')}
                                                         className={`flex-1 text-xs font-bold py-2.5 rounded-lg transition-all ${attachmentType === 'file'
-                                                                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-105'
-                                                                : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-indigo-300 hover:scale-102'
+                                                            ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-105'
+                                                            : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-indigo-300 hover:scale-102'
                                                             }`}
                                                     >
                                                         📎 File Upload
@@ -490,8 +521,8 @@ export default function ManagerDashboard() {
                                                         type="button"
                                                         onClick={() => setAttachmentType('link')}
                                                         className={`flex-1 text-xs font-bold py-2.5 rounded-lg transition-all ${attachmentType === 'link'
-                                                                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-105'
-                                                                : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-indigo-300 hover:scale-102'
+                                                            ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-105'
+                                                            : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-indigo-300 hover:scale-102'
                                                             }`}
                                                     >
                                                         🔗 Link
@@ -579,6 +610,53 @@ export default function ManagerDashboard() {
                 )
                 }
             </div >
+
+            {/* Rejection Modal */}
+            {showRejectionModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="bg-red-600 p-4 flex items-center justify-between text-white">
+                            <h3 className="font-bold text-lg">Reject Task Proof</h3>
+                            <button
+                                onClick={() => setShowRejectionModal(false)}
+                                className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            <p className="text-sm text-slate-600 mb-4">
+                                Please explain why you're rejecting this proof. This message will be shown to the employee so they can fix the issue and resubmit.
+                            </p>
+
+                            <textarea
+                                value={rejectionMessage}
+                                onChange={(e) => setRejectionMessage(e.target.value)}
+                                placeholder="Example: The screenshot is blurry and doesn't clearly show the completed work. Please submit a clearer image."
+                                className="w-full min-h-[120px] p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all outline-none resize-none text-sm"
+                                autoFocus
+                            />
+
+                            <div className="flex gap-3 mt-6">
+                                <button
+                                    onClick={() => setShowRejectionModal(false)}
+                                    className="flex-1 py-2.5 border-2 border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleConfirmRejection}
+                                    disabled={!rejectionMessage.trim()}
+                                    className="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Confirm Rejection
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }
