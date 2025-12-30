@@ -18,22 +18,22 @@ export default function ManagerChat({ employeeId, employeeName }) {
     //     scrollToBottom();
     // }, [messages]);
 
+
     const handleSend = async (e) => {
         e.preventDefault();
         if (!newMessage.trim()) return;
+        if (!userProfile?.uid) {
+            console.error('User profile not loaded');
+            return;
+        }
 
         await sendMessage(newMessage, userProfile.uid);
         setNewMessage('');
     };
 
-    return (
-        <div className="flex flex-col h-[500px] bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-            {/* Header */}
-            <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center gap-2">
-                <MessageSquare size={18} className="text-blue-500" />
-                <h3 className="font-bold text-slate-700">Chat with {employeeName}</h3>
-            </div>
 
+    return (
+        <div className="flex flex-col h-[500px] bg-white overflow-hidden">
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
                 {loading ? (

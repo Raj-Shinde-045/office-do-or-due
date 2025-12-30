@@ -1,13 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, MessageSquare, Minimize2, Maximize2 } from 'lucide-react';
 import ManagerChat from './manager/ManagerChat';
 import ErrorBoundary from './ErrorBoundary';
 
 export default function ChatModal({ isOpen, onClose, employeeId, employeeName, isEmployeeView = false }) {
+    // ESC key handler
+    useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('keydown', handleEscape);
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
+    // Handle backdrop click
+    const handleBackdropClick = (e) => {
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div
+            onClick={handleBackdropClick}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
             <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border border-slate-200">
                 {/* Modal Header */}
                 <div className="bg-indigo-600 p-4 flex items-center justify-between text-white shadow-md z-10">

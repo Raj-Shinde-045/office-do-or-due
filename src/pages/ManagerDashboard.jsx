@@ -380,68 +380,160 @@ export default function ManagerDashboard() {
                                 {/* Right Col: Actions & Chat */}
                                 <div className="space-y-6">
 
-                                    {/* Task Assigner */}
-                                    <div className="bg-white rounded-xl shadow-md border border-slate-200 p-5">
-                                        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                            <Zap size={18} className="text-yellow-500" /> Assign New Task
-                                        </h3>
-                                        <form onSubmit={handleAssignTask} className="space-y-4">
-                                            <div>
+                                    {/* Task Assigner - Enhanced Premium UI */}
+                                    <div className="bg-gradient-to-br from-white to-indigo-50/30 rounded-2xl shadow-xl border border-indigo-100/50 p-6 backdrop-blur-sm relative overflow-hidden">
+                                        {/* Decorative Elements */}
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+                                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-yellow-500/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
+
+                                        {/* Header */}
+                                        <div className="relative mb-6">
+                                            <h3 className="font-bold text-xl text-slate-800 flex items-center gap-3 mb-1">
+                                                <div className="p-2.5 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl shadow-lg shadow-yellow-500/30">
+                                                    <Zap size={20} className="text-white" />
+                                                </div>
+                                                <span className="bg-gradient-to-r from-slate-800 to-indigo-600 bg-clip-text text-transparent">
+                                                    Assign New Task
+                                                </span>
+                                            </h3>
+                                            <p className="text-xs text-slate-500 ml-14">Create and assign work to {currentSelectedEmployee?.name}</p>
+                                        </div>
+
+                                        <form onSubmit={handleAssignTask} className="space-y-5 relative">
+                                            {/* Task Title */}
+                                            <div className="group">
+                                                <label className="block text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                                                    <Briefcase size={12} className="text-indigo-500" />
+                                                    Task Title
+                                                    <span className="text-red-500">*</span>
+                                                </label>
                                                 <input
                                                     type="text"
                                                     required
-                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                                    placeholder="Task Title..."
+                                                    className="w-full px-4 py-3 bg-white/80 border-2 border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all hover:border-slate-300 shadow-sm"
+                                                    placeholder="e.g., Complete sales report"
                                                     value={newTaskTitle}
                                                     onChange={(e) => setNewTaskTitle(e.target.value)}
                                                 />
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <input
-                                                    type="number"
-                                                    required
-                                                    min="1"
-                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                                    placeholder="Points (e.g. 100)"
-                                                    value={newTaskPoints}
-                                                    onChange={(e) => setNewTaskPoints(e.target.value)}
-                                                />
-                                                <input // New Deadline Input
-                                                    type="datetime-local"
-                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600"
-                                                    value={newTaskDeadline}
-                                                    min={new Date().toISOString().slice(0, 16)} // Prevent past dates
-                                                    onChange={(e) => setNewTaskDeadline(e.target.value)}
-                                                />
+
+                                            {/* Points & Deadline Grid */}
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {/* Points */}
+                                                <div className="group">
+                                                    <label className="block text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                                                        <Star size={12} className="text-yellow-500" fill="currentColor" />
+                                                        Points
+                                                        <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        required
+                                                        min="1"
+                                                        className="w-full px-4 py-3 bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl text-sm font-bold text-slate-800 placeholder-slate-400 focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/10 outline-none transition-all hover:border-yellow-300 shadow-sm"
+                                                        placeholder="100"
+                                                        value={newTaskPoints}
+                                                        onChange={(e) => setNewTaskPoints(e.target.value)}
+                                                    />
+                                                </div>
+
+                                                {/* Deadline */}
+                                                <div className="group">
+                                                    <label className="block text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                                                        <Clock size={12} className="text-indigo-500" />
+                                                        Deadline
+                                                    </label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        className="w-full px-3 py-3 bg-white/80 border-2 border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all hover:border-slate-300 shadow-sm"
+                                                        value={newTaskDeadline}
+                                                        min={new Date().toISOString().slice(0, 16)}
+                                                        onChange={(e) => setNewTaskDeadline(e.target.value)}
+                                                    />
+                                                </div>
                                             </div>
-                                            <div>
+
+                                            {/* Description */}
+                                            <div className="group">
+                                                <label className="block text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                                                    <MessageSquare size={12} className="text-indigo-500" />
+                                                    Description & Instructions
+                                                </label>
                                                 <textarea
-                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none h-20 resize-none"
-                                                    placeholder="Description & Instructions..."
+                                                    className="w-full px-4 py-3 bg-white/80 border-2 border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all hover:border-slate-300 h-24 resize-none shadow-sm"
+                                                    placeholder="Provide clear instructions for this task..."
                                                     value={newTaskDesc}
                                                     onChange={(e) => setNewTaskDesc(e.target.value)}
                                                 ></textarea>
                                             </div>
 
-                                            {/* Compact Attachment UI */}
-                                            <div className="bg-slate-50 p-2 rounded-lg border border-slate-200">
-                                                <div className="flex gap-2 mb-2">
-                                                    <button type="button" onClick={() => setAttachmentType('file')} className={`flex-1 text-[10px] uppercase font-bold py-1 rounded ${attachmentType === 'file' ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`}>File</button>
-                                                    <button type="button" onClick={() => setAttachmentType('link')} className={`flex-1 text-[10px] uppercase font-bold py-1 rounded ${attachmentType === 'link' ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`}>Link</button>
+                                            {/* Attachment Section - Enhanced */}
+                                            <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-xl border-2 border-slate-200/50 shadow-inner">
+                                                <label className="block text-xs font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
+                                                    <svg className="w-3 h-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                                    </svg>
+                                                    Attachment (Optional)
+                                                </label>
+                                                <div className="flex gap-2 mb-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setAttachmentType('file')}
+                                                        className={`flex-1 text-xs font-bold py-2.5 rounded-lg transition-all ${attachmentType === 'file'
+                                                                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-105'
+                                                                : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-indigo-300 hover:scale-102'
+                                                            }`}
+                                                    >
+                                                        📎 File Upload
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setAttachmentType('link')}
+                                                        className={`flex-1 text-xs font-bold py-2.5 rounded-lg transition-all ${attachmentType === 'link'
+                                                                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-105'
+                                                                : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-indigo-300 hover:scale-102'
+                                                            }`}
+                                                    >
+                                                        🔗 Link
+                                                    </button>
                                                 </div>
                                                 {attachmentType === 'file' ? (
-                                                    <input type="file" onChange={(e) => setAttachmentFile(e.target.files[0])} className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-[10px] file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                                    <input
+                                                        type="file"
+                                                        onChange={(e) => setAttachmentFile(e.target.files[0])}
+                                                        className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gradient-to-r file:from-indigo-50 file:to-indigo-100 file:text-indigo-700 hover:file:from-indigo-100 hover:file:to-indigo-200 file:transition-all file:cursor-pointer file:shadow-sm"
+                                                    />
                                                 ) : (
-                                                    <input type="url" placeholder="https://..." value={attachmentLink} onChange={(e) => setAttachmentLink(e.target.value)} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs" />
+                                                    <input
+                                                        type="url"
+                                                        placeholder="https://example.com/resource"
+                                                        value={attachmentLink}
+                                                        onChange={(e) => setAttachmentLink(e.target.value)}
+                                                        className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-lg text-xs font-medium text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+                                                    />
                                                 )}
                                             </div>
 
+                                            {/* Submit Button - Premium */}
                                             <button
                                                 type="submit"
-                                                disabled={assigningLoading}
-                                                className="w-full py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 disabled:opacity-50"
+                                                disabled={assigningLoading || isSubmitting}
+                                                className="relative w-full py-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 text-white text-sm font-bold rounded-xl hover:from-indigo-700 hover:via-indigo-600 hover:to-indigo-700 transition-all shadow-xl shadow-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 group overflow-hidden"
                                             >
-                                                {assigningLoading ? 'Assigning...' : 'Assign Task'}
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                                                <span className="relative flex items-center justify-center gap-2">
+                                                    {assigningLoading || isSubmitting ? (
+                                                        <>
+                                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                            Assigning Task...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Zap size={16} className="group-hover:animate-pulse" />
+                                                            Assign Task
+                                                        </>
+                                                    )}
+                                                </span>
                                             </button>
                                         </form>
                                     </div>

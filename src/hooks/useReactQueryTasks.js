@@ -98,7 +98,7 @@ export function useLeaderboard(userProfile) {
                 return pointsB - pointsA;
             });
 
-            return sortedUsers.slice(0, 3); // Top 3
+            return sortedUsers; // Return all employees sorted by points
         },
         enabled: !!userProfile?.companyId,
     });
@@ -116,6 +116,10 @@ export function useUpdateUserStatus(userProfile) {
             const userRef = doc(db, "companies", userProfile.companyId, "users", userProfile.uid);
             await updateDoc(userRef, { status: newStatus });
             return newStatus;
+        },
+        onMutate: async ({ newStatus }) => {
+            // Optimistically update UI
+            return { previousStatus: userProfile.status, newStatus };
         },
         onSuccess: (newStatus) => {
             toast.success(newStatus === 'requesting_task' ? "Work requested successfully!" : "Request cancelled.");
@@ -138,7 +142,10 @@ export function useUploadProof(userProfile) {
             let proofData = null;
 
             if (type === 'file') {
-                if (data.size > 2000 * 1024) throw new Error("File too large! Max 2MB.");
+                const MAX_SIZE = 700 * 1024; // 700KB - Safe for Firestore with Base64 encoding
+                if (data.size > MAX_SIZE) {
+                    throw new Error(`File too large! Max ${(MAX_SIZE / 1024).toFixed(0)}KB allowed.`);
+                }
                 proofData = await convertToBase64(data);
             } else {
                 proofData = data;
@@ -176,6 +183,11 @@ export function useAssignTask(userProfile) {
 
     return useMutation({
         mutationFn: async ({ employeeId, taskData }) => {
+            // Validate userProfile
+            if (!userProfile?.companyId || !userProfile?.uid) {
+                throw new Error('User profile not loaded. Please refresh the page.');
+            }
+
             // 1. Add Task
             const activitiesRef = collection(db, "companies", userProfile.companyId, "users", employeeId, "activities");
             await addDoc(activitiesRef, {
@@ -196,12 +208,12 @@ export function useAssignTask(userProfile) {
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries(['tasks', variables.employeeId]);
-            queryClient.invalidateQueries(['employees', userProfile.companyId]);
+            queryClient.invalidateQueries(['employees', userProfile?.companyId]);
             toast.success("Task Assigned Successfully!");
         },
         onError: (error) => {
             console.error(error);
-            toast.error("Failed to assign task");
+            toast.error(error.message || "Failed to assign task");
         }
     });
 }
