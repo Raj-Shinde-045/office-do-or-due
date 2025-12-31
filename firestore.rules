@@ -21,27 +21,27 @@
         allow create: if true; 
         allow update, delete: if true; // For Super Admin Dashboard
 
-        // Nested Users Collection
-        match /users/{userId} {
-          // Owner can read/write their own profile
-          allow read, write: if isUser(userId);
-          
-          // Managers can read all employees in their company
-          // We verify the requester has 'manager' role in this specific company
-          allow read: if get(/databases/$(database)/documents/companies/$(companyId)/users/$(request.auth.uid)).data.role == 'manager';
-          
-          // Nested Activities
-          match /activities/{activityId} {
-            allow read, write: if isUser(userId);
-            allow read, write: if get(/databases/$(database)/documents/companies/$(companyId)/users/$(request.auth.uid)).data.role == 'manager';
-          }
-        }
+      // Nested Users Collection
+      match /users/{userId} {
+        // Owner can read/write their own profile
+        allow read, write: if isUser(userId);
         
-        // Invites (Future proofing)
-        match /invites/{inviteId} {
-          allow read: if true;
+        // Managers can read all employees in their company
+        // We verify the requester has 'manager' role in this specific company
+        allow read: if get(/databases/$(database)/documents/companies/$(companyId)/users/$(request.auth.uid)).data.role == 'manager';
+        
+        // Nested Activities
+        match /activities/{activityId} {
+           allow read, write: if isUser(userId);
+           allow read, write: if get(/databases/$(database)/documents/companies/$(companyId)/users/$(request.auth.uid)).data.role == 'manager';
         }
       }
+      
+      // Invites (Future proofing)
+      match /invites/{inviteId} {
+         allow read: if true;
+      }
+    }
 
       // Collection Group Query for 'users'
       // Required for AuthContext to find the user's company by their UID
